@@ -1,0 +1,10 @@
+requests
+xarray
+numpy
+matplotlib
+kafka-python  # For KafkaConsumer
+pandas
+scikit-learn  # For OneClassSVM and StandardScaler
+netcdf4
+h5netcdf
+nbformat
