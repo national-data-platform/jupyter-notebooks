@@ -4,11 +4,13 @@ matplotlib
 fsspec
 requests
 aiohttp
-torch
-torchvision
 mlflow
 boto3
 imageio
 rasterio
 timm
 einops
+huggingface_hub
+# mmsegmentation>=1.0.0
+ftfy
+regex
