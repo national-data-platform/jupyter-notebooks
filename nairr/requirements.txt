@@ -1,16 +1,2 @@
-zarr
-pandas
-matplotlib
-fsspec
-requests
-aiohttp
-mlflow
-boto3
-imageio
-# rasterio
-# timm
-# einops
-# huggingface_hub
-# mmsegmentation>=1.0.0
-# ftfy
-# regex
+huggingface_hub
+numpy==1.22.4
