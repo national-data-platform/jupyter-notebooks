@@ -1,0 +1,2 @@
+huggingface_hub
+numpy==1.22.4
