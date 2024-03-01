@@ -52,12 +52,14 @@ def timestamp_to_formatted_str(unix_timestamp):
     return datetime.utcfromtimestamp(unix_timestamp).strftime('%m/%d/%Y-%H:%M:%S')
 
 
-async def stream_and_visualize_data(kafka_host, kafka_port, consumer_id, predictions, timestamp=True, save=False):
+async def stream_and_visualize_data(kafka_host, kafka_port, consumer_id, predictions):
     consumer = AIOKafkaConsumer(
         f"consumer_{consumer_id}",
         bootstrap_servers=kafka_host + ":" + kafka_port,
         auto_offset_reset="latest"
     )
+    timestamp=True
+    save=False
     await consumer.start()
     model = IncrementalModel(max_data_points=100)
 
@@ -73,8 +75,7 @@ async def stream_and_visualize_data(kafka_host, kafka_port, consumer_id, predict
             yaxis=dict(title="Value"),
             autosize=True,
             template="plotly_dark",
-            width=1600,
-            height=600,
+            margin=dict(l=50, r=50, t=50, b=50)
         )
     )
 
