@@ -9,3 +9,5 @@ netcdf4
 h5netcdf
 nbformat
 plotly
+ipywidgets
+aiokafka
