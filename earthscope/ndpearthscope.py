@@ -16,7 +16,7 @@ from sklearn.svm import OneClassSVM
 
 
 
-CKAN_URL = 'https://ip-155-101-6-193.chpc.utah.edu:8443/'
+CKAN_URL = 'https://nationaldataplatform.org/catalog/'
 
 def dataset_detail(dataset_name):
     """Get details of a specific dataset by name."""
