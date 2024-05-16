@@ -29,6 +29,7 @@ async def fetch_recent_active_consumers(kafka_host, kafka_port):
     try:
         await consumer.start()
         recent_messages = []
+        seen_consumer_ids = set()
         ten_minutes_ago = datetime.now(timezone.utc) - timedelta(minutes=10)
         
         # Attempt to fetch the last 50 messages
@@ -40,14 +41,22 @@ async def fetch_recent_active_consumers(kafka_host, kafka_port):
 
         try:
             async for msg in consumer:
-                if len(recent_messages) >= 50:
-                    break
                 message = json.loads(msg.value)
+                consumer_id = message['consumer_id']
+                
+                if consumer_id in seen_consumer_ids:
+                    break
+
+                seen_consumer_ids.add(consumer_id)
                 message_time = datetime.fromtimestamp(msg.timestamp / 1000, timezone.utc)
                 if message_time >= ten_minutes_ago:
                     # Here, modify or extract fields as needed for better display
                     # For example, converting 'profile' dict to a string or extracting specific fields
                     recent_messages.append(message)
+
+                if len(recent_messages) >= 50:
+                    break
+
         except asyncio.TimeoutError:
             pass  # Handle timeout where no new messages are received within the consumer_timeout_ms period
         
