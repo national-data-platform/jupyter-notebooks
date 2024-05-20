@@ -32,11 +32,11 @@ async def fetch_recent_active_consumers(kafka_host, kafka_port):
         seen_consumer_ids = set()
         ten_minutes_ago = datetime.now(timezone.utc) - timedelta(minutes=10)
         
-        # Attempt to fetch the last 50 messages
+        # Attempt to fetch the last 15 messages
         await consumer.seek_to_end()
         last_offsets = await consumer.end_offsets(consumer.assignment())
         for partition, offset in last_offsets.items():
-            start_offset = max(offset - 50, 0)
+            start_offset = max(offset - 15, 0)
             consumer.seek(partition, start_offset)
 
         try:
