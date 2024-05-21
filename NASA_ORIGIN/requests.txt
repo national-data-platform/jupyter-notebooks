@@ -1,0 +1,5 @@
+requests
+ckanapi
+numpy
+xarray
+matplotlib
