@@ -1,1 +1,0 @@
-# EcoViz_CLIP
