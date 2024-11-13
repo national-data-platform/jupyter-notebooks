@@ -1,0 +1,6 @@
+asyncio
+pandas
+plotly
+IPython
+numpy
+scidx
