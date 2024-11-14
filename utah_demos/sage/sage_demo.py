@@ -10,6 +10,7 @@ import threading
 import time
 import warnings
 
+
 sensor_data = [
     {
         "resource_name": "sage_demo_bme280_temp",
@@ -184,9 +185,15 @@ class SageDataProcessing:
         self.processing_thread.join()  # Ensure the thread stops cleanly
 
 
+import plotly.graph_objects as go
+from collections import deque
+import asyncio
+from IPython.display import Image, display, clear_output
+import pandas as pd
+
 async def plot_temp_alerts(processor):
-    # Initialize FigureWidget for dynamic plotting
-    fig = go.FigureWidget(
+    # Initialize the figure
+    fig = go.Figure(
         layout=go.Layout(
             title="Real-Time Temperature Data by State",
             xaxis=dict(title="Timestamp", tickformat="%H:%M:%S"),
@@ -197,98 +204,76 @@ async def plot_temp_alerts(processor):
         )
     )
 
-    # Display the figure widget only once
-    display(fig)
+    state_traces = {}
+    alert_messages = deque(maxlen=10)  # Stores only the latest 10 alerts
 
-    # Initialize data structures
-    state_traces = {}         # Dictionary to store temperature trace indices by state
-    alert_messages = deque(maxlen=10)  # Store up to 10 alert messages
-    previous_alert_messages = list(alert_messages)  # To track changes in alerts
+    # Separate DataFrame to persist all alerts and accumulated data
+    alert_data = pd.DataFrame(columns=["timestamp", "temperature", "alert", "state"])
+    accumulated_data = pd.DataFrame(columns=["timestamp", "temperature", "state", "alert"])
 
-    # Add a single alert marker trace (initially empty, shared across states)
+    # Initial display setup for alerts
     fig.add_scatter(
-        x=[], y=[],  # Initially empty
-        mode='markers',
-        name="Alert",  # Single "Alert" entry in the legend
-        marker=dict(color='red', symbol='circle', size=10),  # Distinct red markers for alerts
-        hoverinfo="text",  # Display alert message on hover
-        showlegend=True  # Show a single "Alert" legend item
+        x=[], y=[], mode='markers', name="Alert",
+        marker=dict(color='red', symbol='circle', size=10), hoverinfo="text", showlegend=True
     )
-    
-    # Index of the alert trace (always the last trace added)
     alert_trace_idx = len(fig.data) - 1
 
     try:
         while True:
-            # Get updated data from the processor's aggregated data
+            # Fetch new data and accumulate
             new_df = processor.get_aggregated_df()
+            accumulated_data = pd.concat([accumulated_data, new_df]).drop_duplicates()
 
-            # Reset alert data for each loop iteration
-            alert_x, alert_y, alert_texts = [], [], []  # To store alert positions and hover texts
+            # Append any new alerts to the persistent alert data
+            new_alerts = new_df.dropna(subset=['alert'])
+            new_alerts = new_alerts[new_alerts['alert'] != 'None']
+            alert_data = pd.concat([alert_data, new_alerts]).drop_duplicates()
 
-            with fig.batch_update():
-                for state, group in new_df.groupby('state'):
-                    # Check if this state already has a trace; if not, create one
-                    if state not in state_traces:
-                        # Use HSL to create a unique color for each state, avoiding red
-                        state_color = f"hsl({(len(state_traces) * 36 + 30) % 360}, 70%, 50%)"
-                        fig.add_scatter(
-                            x=[], y=[],
-                            mode='lines+markers',
-                            name=state,
-                            line=dict(color=state_color),
-                            marker=dict(symbol='circle', size=4)
-                        )
-                        state_traces[state] = len(fig.data) - 1  # Store index of the state trace
+            # Prepare lists for temperature data and alerts
+            alert_x, alert_y, alert_texts = alert_data['timestamp'], alert_data['temperature'], alert_data['alert']
 
-                    # Filter out valid temperature data for plotting
-                    group = group.dropna(subset=['temperature'])
-                    if not group.empty:
-                        temp_idx = state_traces[state]
-                        fig.data[temp_idx].x = group['timestamp']
-                        fig.data[temp_idx].y = group['temperature']
+            for state, group in accumulated_data.groupby('state'):
+                if state not in state_traces:
+                    state_color = f"hsl({(len(state_traces) * 36 + 30) % 360}, 70%, 50%)"
+                    fig.add_scatter(
+                        x=[], y=[], mode='lines+markers', name=state,
+                        line=dict(color=state_color), marker=dict(symbol='circle', size=4)
+                    )
+                    state_traces[state] = len(fig.data) - 1
 
-                    # Process alerts for this state with valid temperature and non-null alert values
-                    alerts = group.dropna(subset=['alert'])
-                    alerts = alerts[alerts['alert'] != 'None']
-                    
-                    if not alerts.empty:
-                        alert_x.extend(alerts['timestamp'])
-                        alert_y.extend(alerts['temperature'])
-                        alert_texts.extend(alerts['alert'])
+                temp_idx = state_traces[state]
+                fig.data[temp_idx].x = group['timestamp']
+                fig.data[temp_idx].y = group['temperature']
 
-                        # Add recent alerts to the alert_messages queue
-                        for _, row in alerts.iterrows():
-                            alert_time = row['timestamp'].strftime("%H:%M:%S")
-                            alert_msg = f"At {alert_time}, {row['alert']} alert in {state}."
-                            if alert_msg not in alert_messages:
-                                alert_messages.append(alert_msg)
+                # Add new alert messages to the alert_messages queue
+                for _, row in new_alerts.iterrows():
+                    alert_time = row['timestamp'].strftime("%H:%M:%S")
+                    alert_msg = f"At {alert_time}, {row['alert']} alert in {state}."
+                    alert_messages.append(alert_msg)
 
-                # Update alert trace with consolidated alert data
-                fig.data[alert_trace_idx].x = alert_x
-                fig.data[alert_trace_idx].y = alert_y
-                fig.data[alert_trace_idx].text = alert_texts  # Hover text with alert messages
+            # Update alert trace with all accumulated alerts
+            fig.data[alert_trace_idx].x = alert_x
+            fig.data[alert_trace_idx].y = alert_y
+            fig.data[alert_trace_idx].text = alert_texts
 
-                # Dynamically update y-axis range based on data
-                if not new_df['temperature'].isna().all():
-                    y_min = new_df['temperature'].min() - 5
-                    y_max = new_df['temperature'].max() + 5
-                    fig.layout.yaxis.range = [y_min, y_max]
+            # Adjust y-axis range based on accumulated data
+            if not accumulated_data['temperature'].isna().all():
+                y_min = accumulated_data['temperature'].min() - 5
+                y_max = accumulated_data['temperature'].max() + 5
+                fig.layout.yaxis.range = [y_min, y_max]
 
-            # Check if alert messages have changed before updating the display
-            if list(alert_messages) != previous_alert_messages:
-                previous_alert_messages = list(alert_messages)
-                clear_output(wait=True)
-                display(fig)
-                print("Last 10 Alerts:")
-                for message in alert_messages:
-                    print(message)
+            # Save and display the plot image
+            fig.write_image("/tmp/plot.png")
+            clear_output(wait=True)
+            display(Image("/tmp/plot.png"))
+
+            # Print the latest 10 alerts consistently
+            print("Last 10 Alerts:")
+            for message in alert_messages:
+                print(message)
 
             await asyncio.sleep(2)
 
     except asyncio.CancelledError:
         print("Visualization stopped.")
-
-
-
 
