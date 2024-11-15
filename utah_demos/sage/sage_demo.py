@@ -263,7 +263,7 @@ async def plot_temp_alerts(processor):
                 fig.layout.yaxis.range = [y_min, y_max]
 
             # Save and display the plot image
-            fig.write_image("/tmp/plot.png")
+            fig.write_image("/tmp/plot.png", engine="kaleido", engine_config={"tmp_path": "/tmp"})
             clear_output(wait=True)
             display(Image("/tmp/plot.png"))
 
