@@ -6,3 +6,4 @@ numpy
 scidx
 jinja2
 ipywidgets
+kaleido
