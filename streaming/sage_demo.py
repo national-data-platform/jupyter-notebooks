@@ -10,6 +10,21 @@ import threading
 import time
 import warnings
 
+import os
+import asyncio
+from dotenv import load_dotenv
+
+
+# Load environment variables from .env file
+load_dotenv(dotenv_path="/home/jovyan/work/streaming_library/.env")
+
+API_URL = os.getenv("API_URL")
+USERNAME = os.getenv("USERNAME")
+PASSWORD = os.getenv("PASSWORD")
+EARTHSCOPE_USERNAME = os.getenv("EARTHSCOPE_USERNAME")
+EARTHSCOPE_PASSWORD = os.getenv("EARTHSCOPE_PASSWORD")
+
+
 
 sensor_data = [
     {
@@ -52,12 +67,12 @@ filters = [
     # Heatwave alert
     "IF temperature > 35 OR humidity < 25 THEN alert = 'Heatwave' ELSE alert = 'None'",
     # State-based temperature thresholds for alerts
-    "IF state = 'Montana' AND temperature > 40 THEN alert = 'High Temp Montana'",
-    "IF state = 'Oregon' AND temperature > 30 THEN alert = 'High Temp Oregon'",
+    # "IF state = 'Montana' AND temperature > 40 THEN alert = 'High Temp Montana'",
+    # "IF state = 'Oregon' AND temperature > 30 THEN alert = 'High Temp Oregon'",
     # Pressure-based alert
-    "IF pressure > 101000 THEN alert = 'High Pressure Alert'",
+    # "IF pressure > 101000 THEN alert = 'High Pressure Alert'",
     # Adjust pressure for certain alert conditions
-    "IF alert IN ['High Temp Montana', 'High Temp Oregon'] THEN pressure = pressure * 0.95"
+    # "IF alert IN ['High Temp Montana', 'High Temp Oregon'] THEN pressure = pressure * 0.95"
 ]
 
 
