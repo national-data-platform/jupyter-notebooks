@@ -1,0 +1,2 @@
+scidx[staging]
+numpy<2
